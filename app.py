@@ -1,46 +1,46 @@
-import streamlit as st
-import numpy as np
-import joblib
+import pandas as pd
 
-# -------------------------------
-# Load Model and Scaler
-# -------------------------------
+# Load everything
 model = joblib.load("house_model.pkl")
 scaler = joblib.load("scaler.pkl")
+model_columns = joblib.load("model_columns.pkl")
 
-# -------------------------------
-# Page Configuration
-# -------------------------------
-st.set_page_config(page_title="House Price Prediction", page_icon="🏠")
+st.title("🏠 House Price Prediction")
 
-st.title("🏠 House Price Prediction App")
-st.write("Enter the house details below to predict the price.")
+# Take ALL inputs properly
+area = st.number_input("Area")
+bedrooms = st.number_input("Bedrooms")
+bathrooms = st.number_input("Bathrooms")
+stories = st.number_input("Stories")
+parking = st.number_input("Parking")
 
-# -------------------------------
-# User Inputs
-# (⚠ Make sure these match your dataset columns exactly)
-# -------------------------------
+# Example categorical
+mainroad = st.selectbox("Main Road", ["yes", "no"])
+guestroom = st.selectbox("Guest Room", ["yes", "no"])
 
-area = st.number_input("Area (in sqft)", min_value=0.0, step=10.0)
-bedrooms = st.number_input("Number of Bedrooms", min_value=0, step=1)
-bathrooms = st.number_input("Number of Bathrooms", min_value=0, step=1)
-stories = st.number_input("Number of Stories", min_value=0, step=1)
-parking = st.number_input("Parking Spaces", min_value=0, step=1)
+if st.button("Predict"):
 
-# -------------------------------
-# Prediction Button
-# -------------------------------
+    input_dict = {
+        "area": area,
+        "bedrooms": bedrooms,
+        "bathrooms": bathrooms,
+        "stories": stories,
+        "parking": parking,
+        "mainroad": mainroad,
+        "guestroom": guestroom
+    }
 
-if st.button("Predict Price"):
-    
-    # Create input array
-    input_data = np.array([[area, bedrooms, bathrooms, stories, parking]])
-    
-    # Scale input
-    input_data = scaler.transform(input_data)
-    
-    # Predict
-    prediction = model.predict(input_data)
-    
-    # Display Result
-    st.success(f"🏷 Estimated House Price: ₹ {prediction[0]:,.2f}")
+    input_df = pd.DataFrame([input_dict])
+
+    # Apply get_dummies
+    input_df = pd.get_dummies(input_df)
+
+    # Match training columns
+    input_df = input_df.reindex(columns=model_columns, fill_value=0)
+
+    # Scale
+    input_scaled = scaler.transform(input_df)
+
+    prediction = model.predict(input_scaled)
+
+    st.success(f"Estimated Price: ₹ {prediction[0]:,.2f}")
